@@ -27,7 +27,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
 import edu.wpi.first.wpilibj.AnalogGyro;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+// import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import edu.wpi.first.wpilibj.motorcontrol.PWMTalonFX;
 
 
 public class Robot extends TimedRobot {
@@ -50,7 +51,7 @@ public class Robot extends TimedRobot {
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
 
-  public final WPI_TalonFX shooter = new WPI_TalonFX(0);
+  public final PWMTalonFX shooter = new PWMTalonFX(0);
 
   // Ultrasonics
   Ultrasonic ultrasonic = new Ultrasonic(0, 0); // define ultrasonic ports once plugged in
