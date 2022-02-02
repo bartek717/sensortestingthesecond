@@ -8,7 +8,8 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Ultrasonic;
+// import edu.wpi.first.math.controller.PIDController;
+// import edu.wpi.first.wpilibj.Ultrasonic;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -19,6 +20,7 @@ import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
 import ca.team3161.lib.utils.controls.LogitechDualAction;
 import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
+import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
 import com.revrobotics.ColorSensorV3;
 
@@ -26,9 +28,14 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
-import edu.wpi.first.wpilibj.AnalogGyro;
-// import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import edu.wpi.first.wpilibj.motorcontrol.PWMTalonFX;
+
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+
+// import java.beans.Encoder;
+
+// import edu.wpi.first.wpilibj.AnalogGyro;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+// import edu.wpi.first.wpilibj.motorcontrol.PWMTalonFX;
 
 
 public class Robot extends TimedRobot {
@@ -48,23 +55,38 @@ public class Robot extends TimedRobot {
   public static final LogitechAxis Y_AXIS = LogitechAxis.Y;
   // public static final LogitechAxis X_AXIS = LogitechAxis.X;
 
+  // private final double kp = 1;
+  // private final double ki = 0;
+  // private final double kd = 0;
+
+  // private final PIDController shooterPid = new PIDController(kp, ki, kd);
+
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
 
-  public final PWMTalonFX shooter = new PWMTalonFX(0);
+  public final WPI_TalonFX shooter = new WPI_TalonFX(1);
+  double setPoint;
 
   // Ultrasonics
-  Ultrasonic ultrasonic = new Ultrasonic(0, 0); // define ultrasonic ports once plugged in
+  // Ultrasonic ultrasonic = new Ultrasonic(0, 0); // define ultrasonic ports once plugged in
 
-  AnalogGyro gyro = new AnalogGyro(0);
-  // 300 degree full rotation for some reason?
+  double currentOutput;
+  // AnalogGyro gyro = new AnalogGyro(0);
+  // // 300 degree full rotation for some reason?
+
+  // public void getSetPoint(double LEFT_STICK, String Y_AXIS) {
+
+  // }
 
   @Override
   public void robotInit() {
-    Ultrasonic.setAutomaticMode(true);
-    gyro.reset();
+    // Ultrasonic.setAutomaticMode(true);
+    // gyro.reset();
 
     this.operator.setMode(LEFT_STICK, Y_AXIS, new SquaredJoystickMode());
+    shooter.setNeutralMode(NeutralMode.Coast);
+    setPoint = 0;
+    
 
   }
 
@@ -81,7 +103,14 @@ public class Robot extends TimedRobot {
      * measurements and make it difficult to accurately determine its color.
      */
 
+    if (this.operator.getButton(LogitechButton.A)) {
+      setPoint = 0.3;
+    } else {
+      setPoint = 0;
+    }
 
+    // currentOutput = shooterPid.calculate(this.shooter.getSelectedSensorVelocity(), setPoint);
+    // this.shooter.set(currentOutput);
     this.shooter.set(this.operator.getValue(LEFT_STICK, Y_AXIS));
 
     
@@ -93,7 +122,7 @@ public class Robot extends TimedRobot {
      * Open Smart Dashboard or Shuffleboard to see the color detected by the 
      * sensor.
      */
-
+    
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
     NetworkTableEntry tx = table.getEntry("tx");
     NetworkTableEntry ty = table.getEntry("ty");
@@ -115,12 +144,14 @@ public class Robot extends TimedRobot {
 
     double totalDistance = heightDif / rs;
 
-    double ultrasonicDistance = ultrasonic.getRangeInches();
+    // double ultrasonicDistance = ultrasonic.getRangeInches();
 
     // finding the gyro angles
-    double angle = gyro.getAngle();
+    // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
+    // SmartDashboard.putNumber("Setpoint", setPoint);
+    // SmartDashboard.putNumber("Current Output", currentOutput);
     SmartDashboard.putNumber("Distance", totalDistance);
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
@@ -131,11 +162,13 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("IR", IR);    
     SmartDashboard.putNumber("Proximity", proximity);
+    SmartDashboard.putNumber("Encoder", this.shooter.getSelectedSensorPosition());
 
-    SmartDashboard.putNumber("Distance Ultrasonic", ultrasonicDistance);
+    // SmartDashboard.putNumber("Distance Ultrasonic", ultrasonicDistance);
 
-    SmartDashboard.putNumber("Gyro Value", angle);
+    // SmartDashboard.putNumber("Gyro Value", angle);
   }
 }
 
 // TODO Find height of limelight, target of limelight, plug in ultrasonic and set ports, check gryo/navx port
+
