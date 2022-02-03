@@ -8,7 +8,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-// import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.PIDController;
 // import edu.wpi.first.wpilibj.Ultrasonic;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.I2C;
@@ -20,7 +20,7 @@ import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
 import ca.team3161.lib.utils.controls.LogitechDualAction;
 import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
-import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
+// import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
 import com.revrobotics.ColorSensorV3;
 
@@ -55,11 +55,11 @@ public class Robot extends TimedRobot {
   public static final LogitechAxis Y_AXIS = LogitechAxis.Y;
   // public static final LogitechAxis X_AXIS = LogitechAxis.X;
 
-  // private final double kp = 1;
-  // private final double ki = 0;
-  // private final double kd = 0;
+  private final double kp = 1;
+  private final double ki = 0;
+  private final double kd = 0;
 
-  // private final PIDController shooterPid = new PIDController(kp, ki, kd);
+  private final PIDController shooterPid = new PIDController(kp, ki, kd);
 
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
@@ -101,17 +101,24 @@ public class Robot extends TimedRobot {
      * well lit conditions (the built in LED is a big help here!). The farther
      * an object is the more light from the surroundings will bleed into the 
      * measurements and make it difficult to accurately determine its color.
-     */
+    //  */
 
-    if (this.operator.getButton(LogitechButton.A)) {
-      setPoint = 0.3;
-    } else {
-      setPoint = 0;
-    }
+    // int buttonPresses = 0;
 
-    // currentOutput = shooterPid.calculate(this.shooter.getSelectedSensorVelocity(), setPoint);
+    // if (this.operator.getButton(LogitechButton.A) && buttonPresses < 2) {
+    //   setPoint = 0.3;
+    //   buttonPresses += 1;
+    // } else {
+    //   setPoint = 0;
+    //   buttonPresses = 0;
+    // }
+
+
+    double sensorVel = -this.shooter.getSelectedSensorPosition();
+    currentOutput = shooterPid.calculate(sensorVel, setPoint);
     // this.shooter.set(currentOutput);
-    this.shooter.set(this.operator.getValue(LEFT_STICK, Y_AXIS));
+    this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
+
 
     
 
@@ -150,8 +157,9 @@ public class Robot extends TimedRobot {
     // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
-    // SmartDashboard.putNumber("Setpoint", setPoint);
-    // SmartDashboard.putNumber("Current Output", currentOutput);
+    SmartDashboard.putNumber("Velocity", sensorVel);
+    SmartDashboard.putNumber("Setpoint", setPoint);
+    SmartDashboard.putNumber("Current Output", currentOutput);
     SmartDashboard.putNumber("Distance", totalDistance);
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
