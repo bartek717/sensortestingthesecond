@@ -17,10 +17,12 @@ import edu.wpi.first.wpilibj.util.Color;
 
 // import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
+// import ca.team3161.lib.utils.SmartDashboardTuner;
 import ca.team3161.lib.utils.controls.LogitechDualAction;
 import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
 // import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
+import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
 import com.revrobotics.ColorSensorV3;
 
@@ -55,22 +57,24 @@ public class Robot extends TimedRobot {
   public static final LogitechAxis Y_AXIS = LogitechAxis.Y;
   // public static final LogitechAxis X_AXIS = LogitechAxis.X;
 
-  private final double kp = 1;
+  private final double kp = 0.0005;
   private final double ki = 0;
+  // private final double kd = -0.0002;  Value that was being tested as of February 3, 2022.
   private final double kd = 0;
 
   private final PIDController shooterPid = new PIDController(kp, ki, kd);
+  // private SmartDashboardTuner shooterPidTuner;
 
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
 
   public final WPI_TalonFX shooter = new WPI_TalonFX(1);
-  double setPoint;
+  volatile double setPoint;
 
   // Ultrasonics
   // Ultrasonic ultrasonic = new Ultrasonic(0, 0); // define ultrasonic ports once plugged in
 
-  double currentOutput;
+  volatile double currentOutput;
   // AnalogGyro gyro = new AnalogGyro(0);
   // // 300 degree full rotation for some reason?
 
@@ -83,11 +87,31 @@ public class Robot extends TimedRobot {
     // Ultrasonic.setAutomaticMode(true);
     // gyro.reset();
 
+    // this.shooterPidTuner = new SmartDashboardTuner("Smart Kp", 0.00001, v -> shooterPid.setP(v));
+    // this.shooterPidTuner.start();
+
     this.operator.setMode(LEFT_STICK, Y_AXIS, new SquaredJoystickMode());
     shooter.setNeutralMode(NeutralMode.Coast);
     setPoint = 0;
-    
+  }
 
+  @Override
+  public void teleopInit() {
+    this.operator.start();
+
+    this.operator.bind(LogitechButton.A, v -> {
+      if (v) {
+          setPoint = 8000;
+        } else {
+          setPoint = 0;
+          shooter.set(0);
+        }
+    });
+  }
+
+  @Override
+  public void disabledInit() {
+    this.operator.cancel();
   }
 
   @Override
@@ -103,7 +127,6 @@ public class Robot extends TimedRobot {
      * measurements and make it difficult to accurately determine its color.
     //  */
 
-    // int buttonPresses = 0;
 
     // if (this.operator.getButton(LogitechButton.A) && buttonPresses < 2) {
     //   setPoint = 0.3;
@@ -113,15 +136,13 @@ public class Robot extends TimedRobot {
     //   buttonPresses = 0;
     // }
 
-
-    double sensorVel = -this.shooter.getSelectedSensorPosition();
-    currentOutput = shooterPid.calculate(sensorVel, setPoint);
-    // this.shooter.set(currentOutput);
-    this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
-
-
+    double sensorVel = this.shooter.getSelectedSensorVelocity();
+    if (setPoint != 0) {
+      currentOutput = shooterPid.calculate(sensorVel, setPoint);
+      this.shooter.set(currentOutput);
+      // this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
+    }
     
-
     Color detectedColor = m_colorSensor.getColor();
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
@@ -170,7 +191,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("IR", IR);    
     SmartDashboard.putNumber("Proximity", proximity);
-    SmartDashboard.putNumber("Encoder", this.shooter.getSelectedSensorPosition());
+    SmartDashboard.putNumber("Encoder", this.shooter.getSelectedSensorVelocity());
 
     // SmartDashboard.putNumber("Distance Ultrasonic", ultrasonicDistance);
 
