@@ -24,6 +24,7 @@ import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
 // import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
+// import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -31,6 +32,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
 
+// import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
 // import java.beans.Encoder;
@@ -67,6 +69,7 @@ public class Robot extends TimedRobot {
 
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
+  public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
 
   public final WPI_TalonFX shooter = new WPI_TalonFX(1);
   volatile double setPoint;
@@ -81,6 +84,8 @@ public class Robot extends TimedRobot {
   // public void getSetPoint(double LEFT_STICK, String Y_AXIS) {
 
   // }
+
+  // public VictorSPX hoodMotor = new VictorSPX(5);
 
   @Override
   public void robotInit() {
@@ -107,6 +112,8 @@ public class Robot extends TimedRobot {
           shooter.set(0);
         }
     });
+
+    
   }
 
   @Override
@@ -142,7 +149,10 @@ public class Robot extends TimedRobot {
       this.shooter.set(currentOutput);
       // this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
     }
+
+    // this.hoodMotor.set(ControlMode.PercentOutput, this.operator.getValue(RIGHT_STICK, Y_AXIS));
     
+
     Color detectedColor = m_colorSensor.getColor();
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
