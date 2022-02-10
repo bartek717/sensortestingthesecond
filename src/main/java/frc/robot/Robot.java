@@ -21,10 +21,10 @@ import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
 import ca.team3161.lib.utils.controls.LogitechDualAction;
 import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
-// import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
+// import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
-// import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -32,6 +32,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
@@ -85,7 +86,7 @@ public class Robot extends TimedRobot {
 
   // }
 
-  // public VictorSPX hoodMotor = new VictorSPX(5);
+  public VictorSPX hoodMotor = new VictorSPX(6);
 
   @Override
   public void robotInit() {
@@ -150,7 +151,7 @@ public class Robot extends TimedRobot {
       // this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
     }
 
-    // this.hoodMotor.set(ControlMode.PercentOutput, this.operator.getValue(RIGHT_STICK, Y_AXIS));
+    this.hoodMotor.set(ControlMode.PercentOutput, this.operator.getValue(RIGHT_STICK, Y_AXIS));
     
 
     Color detectedColor = m_colorSensor.getColor();
