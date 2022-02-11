@@ -15,14 +15,16 @@ import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 
-// import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
+
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
+import ca.team3161.lib.utils.Utils;
+import ca.team3161.lib.utils.controls.Gamepad;
 // import ca.team3161.lib.utils.SmartDashboardTuner;
 import ca.team3161.lib.utils.controls.LogitechDualAction;
 import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
-// import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
+
 
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
@@ -32,7 +34,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
+// import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
@@ -60,10 +62,10 @@ public class Robot extends TimedRobot {
   public static final LogitechAxis Y_AXIS = LogitechAxis.Y;
   // public static final LogitechAxis X_AXIS = LogitechAxis.X;
 
-  private final double kp = 0.0005;
-  private final double ki = 0;
+  private double kp = 0.000550;
+  private double ki = 0.000055;
   // private final double kd = -0.0002;  Value that was being tested as of February 3, 2022.
-  private final double kd = 0;
+  private double kd = 0.000020;
 
   private final PIDController shooterPid = new PIDController(kp, ki, kd);
   // private SmartDashboardTuner shooterPidTuner;
@@ -88,6 +90,12 @@ public class Robot extends TimedRobot {
 
   public VictorSPX hoodMotor = new VictorSPX(6);
 
+
+  public double v = 0;
+  public double x = 0;
+  public double y = 0;
+  public double area = 0;
+
   @Override
   public void robotInit() {
     // Ultrasonic.setAutomaticMode(true);
@@ -99,6 +107,10 @@ public class Robot extends TimedRobot {
     this.operator.setMode(LEFT_STICK, Y_AXIS, new SquaredJoystickMode());
     shooter.setNeutralMode(NeutralMode.Coast);
     setPoint = 0;
+    SmartDashboard.putNumber("KP", kp);
+    SmartDashboard.putNumber("KI", ki);
+    SmartDashboard.putNumber("KD", kd);
+    SmartDashboard.putNumber("Setpoint", setPoint);
   }
 
   @Override
@@ -107,13 +119,30 @@ public class Robot extends TimedRobot {
 
     this.operator.bind(LogitechButton.A, v -> {
       if (v) {
-          setPoint = 8000;
+          setPoint = SmartDashboard.getNumber("Setpoint", 0);
         } else {
           setPoint = 0;
           shooter.set(0);
         }
     });
 
+    // double speed = 0.2;
+
+    // this.operator.bind(LogitechButton.B, b ->{
+    //   if(b){
+    //     if (v == 1){
+    //       if (x > 5){
+    //         hoodMotor.set(ControlMode.PercentOutput, speed);
+    //       } else if (x < -5){
+    //         hoodMotor.set(ControlMode.PercentOutput, -speed);
+    //       } else {
+    //         hoodMotor.set(ControlMode.PercentOutput, 0);
+    //       }
+    //     }
+    //   } else {
+    //     hoodMotor.set(ControlMode.PercentOutput, 0);
+    //   }
+    // });
     
   }
 
@@ -144,14 +173,20 @@ public class Robot extends TimedRobot {
     //   buttonPresses = 0;
     // }
 
+
     double sensorVel = this.shooter.getSelectedSensorVelocity();
+
+    // if (operator.getButton(LogitechButton.A)){
     if (setPoint != 0) {
       currentOutput = shooterPid.calculate(sensorVel, setPoint);
+      currentOutput = Utils.normalizePwm(currentOutput);
+      System.out.println(currentOutput);
       this.shooter.set(currentOutput);
       // this.shooter.set(-this.operator.getValue(LEFT_STICK, Y_AXIS));
     }
+    // }
 
-    this.hoodMotor.set(ControlMode.PercentOutput, this.operator.getValue(RIGHT_STICK, Y_AXIS));
+    // this.shooter.set(ControlMode.PercentOutput, this.operator.getValue(RIGHT_STICK, Y_AXIS));
     
 
     Color detectedColor = m_colorSensor.getColor();
@@ -163,23 +198,29 @@ public class Robot extends TimedRobot {
      */
     
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
+    NetworkTableEntry tv = table.getEntry("tv");
     NetworkTableEntry tx = table.getEntry("tx");
     NetworkTableEntry ty = table.getEntry("ty");
     NetworkTableEntry ta = table.getEntry("ta");
     //read values periodically
-    double x = tx.getDouble(0.0);
-    double y = ty.getDouble(0.0);
-    double area = ta.getDouble(0.0);
+    v = tv.getDouble(0.0);
+    x = tx.getDouble(0.0);
+    y = ty.getDouble(0.0);
+    area = ta.getDouble(0.0);
 
     // finding distance
     double a1 = 0.0;
     double a2 = y;
-    double h2 = 0; // HEIGHT OF TARGET
-    double h1 = 0; // HEIGHT OF LIMELIGHT
+    double h2 = 97.5; // HEIGHT OF TARGET
+    double h1 = 38; // HEIGHT OF LIMELIGHT
 
     double heightDif = h2-h1;
     double totalAngle = a1+a2;
     double rs = tan(totalAngle);
+
+    double currentDistance = 140;
+    double value1 = Math.toDegrees(Math.atan((h2-h1)/currentDistance));
+
 
     double totalDistance = heightDif / rs;
 
@@ -189,20 +230,30 @@ public class Robot extends TimedRobot {
     // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
+    SmartDashboard.putNumber("DA BABY", value1);
+    SmartDashboard.putNumber("Mounting Angle",value1 - y);
     SmartDashboard.putNumber("Velocity", sensorVel);
-    SmartDashboard.putNumber("Setpoint", setPoint);
+    // setPoint = -SmartDashboard.getNumber("Setpoint", setPoint);
+    // SmartDashboard.putNumber("Setpoint", setPoint);
     SmartDashboard.putNumber("Current Output", currentOutput);
     SmartDashboard.putNumber("Distance", totalDistance);
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
     SmartDashboard.putNumber("LimelightArea", area);
+    // kp = SmartDashboard.getNumber("KP", kp);
+    // ki = SmartDashboard.getNumber("KI", ki);
+    // kd = SmartDashboard.getNumber("KD", kd);
+
+    // shooterPid.setPID(kp, ki, kd);
 
     SmartDashboard.putNumber("Red", detectedColor.red);
     SmartDashboard.putNumber("Green", detectedColor.green);
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("IR", IR);    
     SmartDashboard.putNumber("Proximity", proximity);
-    SmartDashboard.putNumber("Encoder", this.shooter.getSelectedSensorVelocity());
+    SmartDashboard.putNumber("Encoder", sensorVel);
+
+
 
     // SmartDashboard.putNumber("Distance Ultrasonic", ultrasonicDistance);
 
