@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.math.controller.PIDController;
 // import edu.wpi.first.wpilibj.Ultrasonic;
 import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
@@ -25,7 +26,8 @@ import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
-
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
 
@@ -34,6 +36,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
@@ -86,15 +89,15 @@ public class Robot extends TimedRobot {
 
   // public void getSetPoint(double LEFT_STICK, String Y_AXIS) {
 
+
   // }
 
-  public VictorSPX hoodMotor = new VictorSPX(6);
+  public TalonSRX hoodMotor = new TalonSRX(4);
 
-
-  public double v = 0;
-  public double x = 0;
-  public double y = 0;
-  public double area = 0;
+  public boolean checkCenter = false;
+  public double speed = 1;
+  public double margin = 5;
+  public boolean hood = false;
 
   @Override
   public void robotInit() {
@@ -111,14 +114,16 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("KI", ki);
     SmartDashboard.putNumber("KD", kd);
     SmartDashboard.putNumber("Setpoint", setPoint);
+    hoodMotor.setSelectedSensorPosition(0);
+
   }
 
   @Override
   public void teleopInit() {
     this.operator.start();
 
-    this.operator.bind(LogitechButton.A, v -> {
-      if (v) {
+    this.operator.bind(LogitechButton.A, z-> {
+      if (z) {
           setPoint = SmartDashboard.getNumber("Setpoint", 0);
         } else {
           setPoint = 0;
@@ -126,24 +131,33 @@ public class Robot extends TimedRobot {
         }
     });
 
-    // double speed = 0.2;
 
-    // this.operator.bind(LogitechButton.B, b ->{
-    //   if(b){
-    //     if (v == 1){
-    //       if (x > 5){
-    //         hoodMotor.set(ControlMode.PercentOutput, speed);
-    //       } else if (x < -5){
-    //         hoodMotor.set(ControlMode.PercentOutput, -speed);
-    //       } else {
-    //         hoodMotor.set(ControlMode.PercentOutput, 0);
-    //       }
-    //     }
-    //   } else {
-    //     hoodMotor.set(ControlMode.PercentOutput, 0);
-    //   }
-    // });
-    
+    this.operator.bind(LogitechButton.B, b ->{
+      if(b){
+        if (checkCenter){
+          checkCenter = false;
+        } else {
+          checkCenter = true;
+        }
+      }
+    });
+
+    this.operator.bind(LogitechButton.X, q ->{
+      if(q){
+        if(hood){
+          hood = false;
+        }else{
+          hood = true;
+        }
+      }
+    });
+
+    this.operator.bind(LogitechButton.Y, p ->{
+      if(p){
+        hoodMotor.setSelectedSensorPosition(0);
+      }
+    }
+    );
   }
 
   @Override
@@ -172,6 +186,20 @@ public class Robot extends TimedRobot {
     //   setPoint = 0;
     //   buttonPresses = 0;
     // }
+
+    // top setpoint of the hoodmoter == -83000
+    // bottom setpoint of the hoodmoter == 0
+
+    double encoderReadingPosition = this.hoodMotor.getSelectedSensorPosition();
+    double encoderReadingVelocity = this.hoodMotor.getSelectedSensorVelocity();
+
+    if(hood){
+      while(encoderReadingPosition > -600000){
+        hoodMotor.set(ControlMode.PercentOutput, -.5);
+        encoderReadingPosition = this.hoodMotor.getSelectedSensorPosition();
+      }
+      hoodMotor.set(ControlMode.PercentOutput, 0);
+    }
 
 
     double sensorVel = this.shooter.getSelectedSensorVelocity();
@@ -203,10 +231,22 @@ public class Robot extends TimedRobot {
     NetworkTableEntry ty = table.getEntry("ty");
     NetworkTableEntry ta = table.getEntry("ta");
     //read values periodically
-    v = tv.getDouble(0.0);
-    x = tx.getDouble(0.0);
-    y = ty.getDouble(0.0);
-    area = ta.getDouble(0.0);
+    double v = tv.getDouble(0.0);
+    double x = tx.getDouble(0.0);
+    double y = ty.getDouble(0.0);
+    double area = ta.getDouble(0.0);
+
+    // if (checkCenter){
+    //   if (x > margin){
+    //     hoodMotor.set(ControlMode.PercentOutput, speed);
+    //   } else if (x < -margin){
+    //     hoodMotor.set(ControlMode.PercentOutput, -speed);
+    //   } else {
+    //     hoodMotor.set(ControlMode.PercentOutput, 0);
+    //   }
+    // }
+
+    hoodMotor.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
 
     // finding distance
     double a1 = 0.0;
@@ -215,11 +255,11 @@ public class Robot extends TimedRobot {
     double h1 = 38; // HEIGHT OF LIMELIGHT
 
     double heightDif = h2-h1;
-    double totalAngle = a1+a2;
-    double rs = tan(totalAngle);
+    double totalAngle = a2;
+    double rs = Math.tan(Math.toRadians(totalAngle));
 
-    double currentDistance = 140;
-    double value1 = Math.toDegrees(Math.atan((h2-h1)/currentDistance));
+    // double currentDistance = 140;
+    // double value1 = Math.toDegrees(Math.atan((h2-h1)/currentDistance));
 
 
     double totalDistance = heightDif / rs;
@@ -230,8 +270,12 @@ public class Robot extends TimedRobot {
     // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
-    SmartDashboard.putNumber("DA BABY", value1);
-    SmartDashboard.putNumber("Mounting Angle",value1 - y);
+
+    SmartDashboard.putNumber("Encoder Reading Position", encoderReadingPosition);
+    SmartDashboard.putNumber("Encoder Reading Velocity", encoderReadingVelocity);
+    SmartDashboard.putNumber("Total distance", totalDistance);
+    // SmartDashboard.putNumber("DA BABY", value1);
+    // SmartDashboard.putNumber("Mounting Angle",value1 - y);
     SmartDashboard.putNumber("Velocity", sensorVel);
     // setPoint = -SmartDashboard.getNumber("Setpoint", setPoint);
     // SmartDashboard.putNumber("Setpoint", setPoint);
