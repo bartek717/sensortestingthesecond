@@ -220,23 +220,40 @@ public class Robot extends TimedRobot {
       setPoint = 500000;
     }
 
-    while (turretEncoderReadingPosition >= -500000 && turretEncoderReadingPosition <= 500000) {
-      TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
-    } 
-    
-    // else if (turretEncoderReadingPosition <= -500000){
-    //   if(this.operator.getValue(LEFT_STICK, Y_AXIS) < 0){
-    //     TurretMoter.set(ControlMode.PercentOutput, -this.operator.getValue(LEFT_STICK, Y_AXIS));
-    //   }else{
-    //     TurretMoter.set(ControlMode.PercentOutput, 0);
-    //   }
-    // }else if(turretEncoderReadingPosition >= 500000){
-    //   if(this.operator.getValue(LEFT_STICK, Y_AXIS) > 0){
-    //     TurretMoter.set(ControlMode.PercentOutput, -this.operator.getValue(LEFT_STICK, Y_AXIS));
-    //   }else{
-    //     TurretMoter.set(ControlMode.PercentOutput, 0);
-    //   }
+    // Turret turning to setpoints of roughly 180 degrees (90 each side)
+    // PID seems to be needed
+
+    /*
+    if (turretEncoderReadingPosition >= -500000 && turretEncoderReadingPosition <= 500000) {
+    TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
+    }else if (turretEncoderReadingPosition < -500000){
+      if(this.operator.getValue(LEFT_STICK, Y_AXIS) > 0.1){
+        TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
+      }else{
+        TurretMoter.set(ControlMode.PercentOutput, 0);
+      }
+    }else if(turretEncoderReadingPosition > 500000){
+      if(this.operator.getValue(LEFT_STICK, Y_AXIS) < -0.1){
+        TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
+      }else{
+        TurretMoter.set(ControlMode.PercentOutput, 0);
+      }
+    }
+    */
+
+
+    System.out.println(setPoint);
+
+    // turning the turret to a rough setpoint without PID
+
+    // if(turretEncoderReadingPosition <= setPoint - 20000){
+    //   TurretMoter.set(ControlMode.PercentOutput, .5);
+    // }else if (turretEncoderReadingPosition >= setPoint + 20000){
+    //   TurretMoter.set(ControlMode.PercentOutput, -.5);
     // }
+
+
+
 
     // finding distance
     double a1 = 0.0;
