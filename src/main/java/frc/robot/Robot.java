@@ -30,6 +30,7 @@ import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
+import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -93,6 +94,9 @@ public class Robot extends TimedRobot {
   // }
 
   public TalonSRX TurretMoter = new TalonSRX(1);
+  
+  // PID for the turret motor.
+  // public PIDController turretPID = new PIDController();
 
   public boolean checkCenter = false;
   public double speed = 1;
@@ -185,6 +189,14 @@ public class Robot extends TimedRobot {
     Color detectedColor = m_colorSensor.getColor();
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
+    
+    double turretEncoderReadingPosition = TurretMoter.getSelectedSensorPosition();
+    double turretEncoderReadingVelocity = TurretMoter.getSelectedSensorVelocity();
+  
+    if(hood){
+      TurretMoter.setSelectedSensorPosition(0);
+    }
+
     /**
      * Open Smart Dashboard or Shuffleboard to see the color detected by the 
      * sensor.
@@ -201,7 +213,30 @@ public class Robot extends TimedRobot {
     double y = ty.getDouble(0.0);
     double area = ta.getDouble(0.0);
 
-    TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
+
+    if(setPoint < -500000){
+      setPoint = -500000;
+    }else if(setPoint > 500000){
+      setPoint = 500000;
+    }
+
+    while (turretEncoderReadingPosition >= -500000 && turretEncoderReadingPosition <= 500000) {
+      TurretMoter.set(ControlMode.PercentOutput, this.operator.getValue(LEFT_STICK, Y_AXIS));
+    } 
+    
+    // else if (turretEncoderReadingPosition <= -500000){
+    //   if(this.operator.getValue(LEFT_STICK, Y_AXIS) < 0){
+    //     TurretMoter.set(ControlMode.PercentOutput, -this.operator.getValue(LEFT_STICK, Y_AXIS));
+    //   }else{
+    //     TurretMoter.set(ControlMode.PercentOutput, 0);
+    //   }
+    // }else if(turretEncoderReadingPosition >= 500000){
+    //   if(this.operator.getValue(LEFT_STICK, Y_AXIS) > 0){
+    //     TurretMoter.set(ControlMode.PercentOutput, -this.operator.getValue(LEFT_STICK, Y_AXIS));
+    //   }else{
+    //     TurretMoter.set(ControlMode.PercentOutput, 0);
+    //   }
+    // }
 
     // finding distance
     double a1 = 0.0;
@@ -225,15 +260,16 @@ public class Robot extends TimedRobot {
     // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
-    /*
+    
     SmartDashboard.putNumber("Encoder Reading Position", turretEncoderReadingPosition);
     SmartDashboard.putNumber("Encoder Reading Velocity", turretEncoderReadingVelocity);
-    SmartDashboard.putNumber("Total distance", totalDistance);
+    // SmartDashboard.putNumber("Total distance", totalDistance);
     // SmartDashboard.putNumber("DA BABY", value1);
     // SmartDashboard.putNumber("Mounting Angle",value1 - y);
     // SmartDashboard.putNumber("Velocity", sensorVel);
-    // setPoint = -SmartDashboard.getNumber("Setpoint", setPoint);
-    // SmartDashboard.putNumber("Setpoint", setPoint);
+    setPoint = SmartDashboard.getNumber("Setpoint", setPoint);
+    SmartDashboard.putNumber("Setpoint", setPoint);
+    /*
     SmartDashboard.putNumber("Current Output", currentOutput);
     SmartDashboard.putNumber("Distance", totalDistance);
     SmartDashboard.putNumber("LimelightX", x);
