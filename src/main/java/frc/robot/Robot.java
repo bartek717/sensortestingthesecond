@@ -225,7 +225,7 @@ public class Robot extends TimedRobot {
     // double angle = gyro.getAngle();
 
     //post to smart dashboard periodically
-
+    /*
     SmartDashboard.putNumber("Encoder Reading Position", turretEncoderReadingPosition);
     SmartDashboard.putNumber("Encoder Reading Velocity", turretEncoderReadingVelocity);
     SmartDashboard.putNumber("Total distance", totalDistance);
@@ -252,7 +252,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Proximity", proximity);
     // SmartDashboard.putNumber("Encoder", sensorVel);
 
-
+    */
 
     // SmartDashboard.putNumber("Distance Ultrasonic", ultrasonicDistance);
 
