@@ -26,7 +26,9 @@ import ca.team3161.lib.utils.controls.SquaredJoystickMode;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechAxis;
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechButton;
 
- 
+// import ca.team3161.lib.robot.BlinkinLEDController;
+// import ca.team3161.lib.robot.BlinkinLEDController.Pattern;
+
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.ColorSensorV3;
@@ -36,6 +38,7 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static java.lang.Math.tan;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -77,6 +80,7 @@ public class Robot extends TimedRobot {
   // public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
   public static final LogitechControl LEFT_STICK = LogitechControl.LEFT_STICK;
   public static final LogitechControl RIGHT_STICK = LogitechControl.RIGHT_STICK;
+  // public static BlinkinLEDController led = new BlinkinLEDController(0);
 
   // public final WPI_TalonFX shooter = new WPI_TalonFX(1);
   volatile double setPoint;
@@ -103,6 +107,7 @@ public class Robot extends TimedRobot {
   public double margin = 5;
   public boolean hood = false;
 
+
   @Override
   public void robotInit() {
     // Ultrasonic.setAutomaticMode(true);
@@ -119,11 +124,13 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("KD", kd);
     SmartDashboard.putNumber("Setpoint", setPoint);
     // hoodMotor.setSelectedSensorPosition(0);
+    // this.led.setLEDPattern(Pattern.CONFETTI);
 
   }
 
   @Override
   public void teleopInit() {
+    // this.led.setLEDPattern(Pattern.LARSON_RED);
     this.operator.start();
 
     // this.operator.bind(LogitechButton.A, z-> {
@@ -244,13 +251,32 @@ public class Robot extends TimedRobot {
 
     System.out.println(setPoint);
 
-    // turning the turret to a rough setpoint without PID
+    // turning the turret to a rough setpoint without PID or limelight
+    // tested and it works
+    if(turretEncoderReadingPosition >= setPoint - 50000 && turretEncoderReadingPosition <= setPoint + 30000){
+      TurretMoter.set(ControlMode.PercentOutput, 0);
+    }else if(turretEncoderReadingPosition <= setPoint - 50000){
+      TurretMoter.set(ControlMode.PercentOutput, .5);
+    }else if (turretEncoderReadingPosition >= setPoint + 50000){
+      TurretMoter.set(ControlMode.PercentOutput, -.5);
+    }
 
-    // if(turretEncoderReadingPosition <= setPoint - 20000){
-    //   TurretMoter.set(ControlMode.PercentOutput, .5);
-    // }else if (turretEncoderReadingPosition >= setPoint + 20000){
-    //   TurretMoter.set(ControlMode.PercentOutput, -.5);
-    // }
+    // turret with limelight without pid
+    // TO TEST
+    /*
+    double txToTicks = x * 5555;
+    double target = turretEncoderReadingPosition + txToTicks;
+    SmartDashboard.putNumber("txtoticks", txToTicks);
+    SmartDashboard.putNumber("Target value", target);
+    if(turretEncoderReadingPosition >= target - 40000 && turretEncoderReadingPosition <= target + 40000){
+      TurretMoter.set(ControlMode.PercentOutput, 0);
+    }else if(turretEncoderReadingPosition <= target - 40000){
+      TurretMoter.set(ControlMode.PercentOutput, .5);
+    }else if (turretEncoderReadingPosition >= target + 40000){
+      TurretMoter.set(ControlMode.PercentOutput, -.5);
+    }
+
+    */
 
 
 
@@ -284,8 +310,8 @@ public class Robot extends TimedRobot {
     // SmartDashboard.putNumber("DA BABY", value1);
     // SmartDashboard.putNumber("Mounting Angle",value1 - y);
     // SmartDashboard.putNumber("Velocity", sensorVel);
-    setPoint = SmartDashboard.getNumber("Setpoint", setPoint);
-    SmartDashboard.putNumber("Setpoint", setPoint);
+    setPoint = SmartDashboard.getNumber("Setpoint in degrees", setPoint)*5555;
+    SmartDashboard.putNumber("Setpoint in degrees", setPoint);
     /*
     SmartDashboard.putNumber("Current Output", currentOutput);
     SmartDashboard.putNumber("Distance", totalDistance);
