@@ -333,17 +333,17 @@ public class Robot extends TimedRobot {
       shooterMotor.set(ControlMode.PercentOutput, setPointShooter);
       SmartDashboard.putNumber("Current Motor Output", turretVel);
       
-      
+      double turretRotationSpeed = 0.3;
 
       if(turretEncoderReadingPosition >= setPoint - 50000 && turretEncoderReadingPosition <= setPoint + 30000){
         System.out.println("ex1");
         TurretMoter.set(ControlMode.PercentOutput, 0);
       }else if(turretEncoderReadingPosition <= setPoint - 50000){
         System.out.println("ex2");
-        TurretMoter.set(ControlMode.PercentOutput, 0.3);
+        TurretMoter.set(ControlMode.PercentOutput, turretRotationSpeed);
       }else if (turretEncoderReadingPosition >= setPoint + 50000){
         System.out.println("ex3");
-        TurretMoter.set(ControlMode.PercentOutput, -0.3);
+        TurretMoter.set(ControlMode.PercentOutput, -turretRotationSpeed);
       }
       
       if(turretHoodPosition >= setPointHood - 20000 && turretHoodPosition <= setPointHood + 20000){
