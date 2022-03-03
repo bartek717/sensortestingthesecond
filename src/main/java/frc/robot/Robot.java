@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.util.Color;
 
 
 import ca.team3161.lib.utils.controls.LogitechDualAction.LogitechControl;
+import ca.team3161.lib.utils.SmartDashboardTuner;
 import ca.team3161.lib.utils.Utils;
 import ca.team3161.lib.utils.controls.Gamepad;
 // import ca.team3161.lib.utils.SmartDashboardTuner;
@@ -73,10 +74,10 @@ public class Robot extends TimedRobot {
   public static final LogitechAxis Y_AXIS = LogitechAxis.Y;
   // public static final LogitechAxis X_AXIS = LogitechAxis.X;
 
-  private double kp = 0.000550;
-  private double ki = 0.000055;
+  private double kp = 0.00035;
+  private double ki = 0.000075;
   // private final double kd = -0.0002;  Value that was being tested as of February 3, 2022.
-  private double kd = 0.000020;
+  private double kd = 0.00003;
 
 
   // fender and launchpad shots
@@ -94,7 +95,7 @@ public class Robot extends TimedRobot {
   // public static BlinkinLEDController led = new BlinkinLEDController(0);
 
   // public final WPI_TalonFX shooter = new WPI_TalonFX(1);
-  volatile double setPoint;
+  volatile double setPoint = 5000;
   volatile double setPointHood;
 
   // Ultrasonics
@@ -125,6 +126,8 @@ public class Robot extends TimedRobot {
   public boolean launch = false;
   public double ledValue;
   volatile double setPointShooter = 0;
+  public double shooterEncoderReadingVelocity = 0;
+  public double shooterEncoderReadingPosition = 0;
 
 
   @Override
@@ -136,6 +139,11 @@ public class Robot extends TimedRobot {
     // this.shooterPidTuner.start();
 
     this.operator.setMode(LEFT_STICK, Y_AXIS, new SquaredJoystickMode());
+
+    // this.pTuner = new SmartDashboardTuner("kP", kp, shooterPid::setP);
+    // this.pTuner = new SmartDashboardTuner("kI", ki, shooterPid::setI);
+    // this.pTuner = new SmartDashboardTuner("kD", kd, shooterPid::setD);
+
     // shooter.setNeutralMode(NeutralMode.Coast);
     
     setPoint = 0;
@@ -155,6 +163,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+    SmartDashboard.putNumber("Setpoint for the shooter is: ", setPointShooter);
+    SmartDashboard.putNumber("Current Output is: ", shooterEncoderReadingVelocity);
     // this.led.setLEDPattern(Pattern.LARSON_RED);
     this.operator.start();
 
@@ -230,7 +240,7 @@ public class Robot extends TimedRobot {
      * measurements and make it difficult to accurately determine its color.
     //  */
 
-    //double turretEncoderReadingPosition = this.TurretMoter.getSelectedSensorPosition();
+    double turretEncoderReadingPosition = this.TurretMoter.getSelectedSensorPosition();
     //double turretEncoderReadingVelocity = this.TurretMoter.getSelectedSensorVelocity();
     this.ledValue = SmartDashboard.getNumber("LED PWM Value", 0);
     this.ledControl.set(this.ledValue);
@@ -238,9 +248,9 @@ public class Robot extends TimedRobot {
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
     
-    double turretEncoderReadingPosition = TurretMoter.getSelectedSensorPosition();
-    double turretEncoderReadingVelocity = TurretMoter.getSelectedSensorVelocity();
-    double turretVel = this.shooterMotor.getSelectedSensorVelocity();
+    // double turretEncoderReadingPosition = TurretMoter.getSelectedSensorPosition();
+    shooterEncoderReadingVelocity = shooterMotor.getSelectedSensorVelocity();
+    shooterEncoderReadingPosition = shooterMotor.getSelectedSensorPosition();
     double turretHoodPosition = this.hoodMotor.getSelectedSensorPosition();
 
     if(hood){
@@ -318,43 +328,46 @@ public class Robot extends TimedRobot {
     //   TurretMoter.set(ControlMode.PercentOutput, -0.3);
     // }
 
+    /*
     if(shoot){
       System.out.println(setPointShooter);
 
       // pid for shooter
-      // if(setPointShooter != 0){
-      //   currentOutput = shooterPid.calculate(turretEncoderReadingVelocity, setPointShooter);
-      //   currentOutput = Utils.normalizePwm(currentOutput);
-      //   System.out.println(currentOutput);
-      //   this.shooterMotor.set(ControlMode.PercentOutput, currentOutput);
-      // }
+      if(setPointShooter != 0){
+        currentOutput = shooterPid.calculate(shooterEncoderReadingVelocity, setPointShooter);
+        currentOutput = Utils.normalizePwm(currentOutput);
+        System.out.println(currentOutput);
+        this.shooterMotor.set(ControlMode.PercentOutput, currentOutput);
+        SmartDashboard.putNumber("Setpoint for the shooter is: ", setPointShooter);
+        SmartDashboard.putNumber("Current Output is: ", shooterEncoderReadingVelocity);
+      }
   
       // shooter without pid
-      shooterMotor.set(ControlMode.PercentOutput, setPointShooter);
-      SmartDashboard.putNumber("Current Motor Output", turretVel);
+      // shooterMotor.set(ControlMode.PercentOutput, setPointShooter);
+      // SmartDashboard.putNumber("Current Motor Output", turretVel);
       
-      double turretRotationSpeed = 0.3;
+      // double turretRotationSpeed = 0.3;
 
-      if(turretEncoderReadingPosition >= setPoint - 50000 && turretEncoderReadingPosition <= setPoint + 30000){
-        System.out.println("ex1");
-        TurretMoter.set(ControlMode.PercentOutput, 0);
-      }else if(turretEncoderReadingPosition <= setPoint - 50000){
-        System.out.println("ex2");
-        TurretMoter.set(ControlMode.PercentOutput, turretRotationSpeed);
-      }else if (turretEncoderReadingPosition >= setPoint + 50000){
-        System.out.println("ex3");
-        TurretMoter.set(ControlMode.PercentOutput, -turretRotationSpeed);
-      }
+      // if(turretEncoderReadingPosition >= setPoint - 50000 && turretEncoderReadingPosition <= setPoint + 30000){
+      //   System.out.println("ex1");
+      //   TurretMoter.set(ControlMode.PercentOutput, 0);
+      // }else if(turretEncoderReadingPosition <= setPoint - 50000){
+      //   System.out.println("ex2");
+      //   TurretMoter.set(ControlMode.PercentOutput, turretRotationSpeed);
+      // }else if (turretEncoderReadingPosition >= setPoint + 50000){
+      //   System.out.println("ex3");
+      //   TurretMoter.set(ControlMode.PercentOutput, -turretRotationSpeed);
+      // }
       
-      if(turretHoodPosition >= setPointHood - 20000 && turretHoodPosition <= setPointHood + 20000){
-        hoodMotor.set(ControlMode.PercentOutput, 0);
-      }else if(turretHoodPosition <= setPointHood - 20000){
-        System.out.println("ex4");
-        hoodMotor.set(ControlMode.PercentOutput, 0.3);
-      }else if (turretHoodPosition >= setPointHood + 20000){
-        System.out.println("ex5");
-        hoodMotor.set(ControlMode.PercentOutput, -0.3);
-      }
+      // if(turretHoodPosition >= setPointHood - 20000 && turretHoodPosition <= setPointHood + 20000){
+      //   hoodMotor.set(ControlMode.PercentOutput, 0);
+      // }else if(turretHoodPosition <= setPointHood - 20000){
+      //   System.out.println("ex4");
+      //   hoodMotor.set(ControlMode.PercentOutput, 0.75);
+      // }else if (turretHoodPosition >= setPointHood + 20000){
+      //   System.out.println("ex5");
+      //   hoodMotor.set(ControlMode.PercentOutput, -0.75);
+      // }
 
       // hoodMotor.set(ControlMode.PercentOutput, .2);
       
@@ -362,9 +375,10 @@ public class Robot extends TimedRobot {
     }
 
 
+    */
     // THE BELOW SHOULD WORK FOR TWO BUTTON SHOT
 
-    /*
+    
     // future fender and far launchpad shot
     if(shootFender){
       System.out.println("FENDER SHOT: ");
@@ -376,6 +390,7 @@ public class Robot extends TimedRobot {
       System.out.println("SETPOINT FOR THE TURRET TURNING " + setPoint);
 
       shooterMotor.set(ControlMode.PercentOutput, setPointShooter);
+      // SmartDashboard.putNumber("Position", value)
 
       if(turretEncoderReadingPosition >= setPoint - 30000 && turretEncoderReadingPosition <= setPoint + 30000){
         TurretMoter.set(ControlMode.PercentOutput, 0);
@@ -397,7 +412,7 @@ public class Robot extends TimedRobot {
       System.out.println("LAUNCHPAD SHOT: ");
       setPointHood = 300000;
       setPointShooter = 0.65;
-      setPoint = 202200;
+      setPoint = 200000;
       System.out.println("SETPOINT HOOD: " + setPointHood);
       System.out.println("SETPOINT SHOOTER " + setPointShooter);
       System.out.println("SETPOINT FOR THE TURRET TURNING " + setPoint);
@@ -424,7 +439,7 @@ public class Robot extends TimedRobot {
       System.out.println("SHOOTER IS DISABLED");
       shooterMotor.set(ControlMode.PercentOutput, 0);
     }
-    */
+    
 
 
     // turret with limelight without pid
@@ -443,6 +458,8 @@ public class Robot extends TimedRobot {
     }
 
     */
+
+    
 
 
 
@@ -471,7 +488,7 @@ public class Robot extends TimedRobot {
     //post to smart dashboard periodically
     
     SmartDashboard.putNumber("Encoder Reading Position", turretEncoderReadingPosition);
-    SmartDashboard.putNumber("Encoder Reading Velocity", turretEncoderReadingVelocity);
+    SmartDashboard.putNumber("Encoder Reading Velocity", shooterEncoderReadingVelocity);
     // SmartDashboard.putNumber("Total distance", totalDistance);
     // SmartDashboard.putNumber("DA BABY", value1);
     // SmartDashboard.putNumber("Mounting Angle",value1 - y);
@@ -491,6 +508,8 @@ public class Robot extends TimedRobot {
 
 
     SmartDashboard.putNumber("Hood encoder value", turretHoodPosition);
+    System.out.println(turretEncoderReadingPosition);
+    SmartDashboard.putNumber("FIX THIS", turretEncoderReadingPosition); 
     
     /*
     SmartDashboard.putNumber("Current Output", currentOutput);
